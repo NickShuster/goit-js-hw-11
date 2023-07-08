@@ -1,8 +1,9 @@
 import axios from 'axios';
 import Notiflix from 'notiflix';
 
-const API_KEY = 'live_Zyc15vsLWME0Ezyn0SJRdTL6JLoPr05b7FKFL0hoUfqyA7hZM7EbWXAYmNtcprir';
 const BASE_URL = 'https://pixabay.com/api/';
+
+axios.defaults.headers.common['x-api-key'] = 'live_Zyc15vsLWME0Ezyn0SJRdTL6JLoPr05b7FKFL0hoUfqyA7hZM7EbWXAYmNtcprir';
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
@@ -31,7 +32,6 @@ searchForm.addEventListener('submit', async (e) => {
   try {
     const response = await axios.get(BASE_URL, {
       params: {
-        key: API_KEY,
         q: query,
         image_type: 'photo',
         orientation: 'horizontal',
@@ -63,12 +63,14 @@ searchForm.addEventListener('submit', async (e) => {
 });
 
 loadMoreBtn.addEventListener('click', async () => {
-  page++;
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.textContent = 'Loading...';
 
   try {
+    page++;
+
     const response = await axios.get(BASE_URL, {
       params: {
-        key: API_KEY,
         q: currentQuery,
         image_type: 'photo',
         orientation: 'horizontal',
@@ -85,19 +87,24 @@ loadMoreBtn.addEventListener('click', async () => {
 
     if (hits.length >= totalHits) {
       hideLoadMoreButton();
+    } else {
+      showLoadMoreButton();
     }
   } catch (error) {
     console.error(error);
     showErrorNotification();
+  } finally {
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.textContent = 'Load more';
   }
 });
 
 function renderImages(images) {
   const cardsHTML = images.map((image) => {
-    const { webformatURL, largeImageURL, likes, views, comments, downloads } = image;
+    const { webformatURL, likes, views, comments, downloads } = image;
     const cardHTML = `
       <div class="photo-card">
-        <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+        <img src="${webformatURL}" alt="" loading="lazy" />
         <div class="info">
           <p class="info-item"><b>Likes:</b> ${likes}</p>
           <p class="info-item"><b>Views:</b> ${views}</p>
