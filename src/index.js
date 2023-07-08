@@ -1,9 +1,8 @@
 import axios from 'axios';
 import Notiflix from 'notiflix';
-
 const BASE_URL = 'https://pixabay.com/api/';
 
-axios.defaults.headers.common['x-api-key'] = 'live_Zyc15vsLWME0Ezyn0SJRdTL6JLoPr05b7FKFL0hoUfqyA7hZM7EbWXAYmNtcprir';
+axios.defaults.headers.common["x-api-key"] = "live_8MwsOkn3MOo7VnSQaDExTxH256t08mMl4kkvSIwqATPKQ0kfM7FPETs3DhtDNjVJ";
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
