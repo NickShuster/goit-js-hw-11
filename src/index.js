@@ -121,4 +121,4 @@ function showError(message) {
   notiflix.Notify.failure(message);
 }
 
-notiflix.Notify.init({ position: 'center-bottom', distance: '15px', timeout: 3000 });
+// notiflix.Notify.init({ position: 'center-bottom', distance: '15px', timeout: 3000 });
