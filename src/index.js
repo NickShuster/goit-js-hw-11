@@ -5,12 +5,14 @@ const ITEMS_PER_PAGE = 20;
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
+const errorElement = document.querySelector('.error');
 
 let searchQuery = '';
 let page = 1;
 let totalHits = 0;
 
 loadMoreBtn.classList.add('hide');
+errorElement.style.display = 'none';
 
 searchForm.addEventListener('submit', handleSubmit);
 loadMoreBtn.addEventListener('click', loadMoreImages);
@@ -23,6 +25,7 @@ async function handleSubmit(event) {
   page = 1;
   totalHits = 0;
   clearGallery();
+  hideLoadMoreButton();
   await fetchImages();
 }
 
@@ -43,7 +46,12 @@ async function fetchImages() {
     const { hits, totalHits: newTotalHits } = response.data;
     totalHits = newTotalHits;
 
-    if (hits.length === 0) {
+    if (page === 1 && hits.length > 0) {
+      showSuccessMessage(`Hooray! We found ${totalHits} images.`);
+      showLoadMoreButton();
+    }
+
+    if (hits.length === 0 && page === 1) {
       showError('Sorry, there are no images matching your search query. Please try again.');
       clearGallery();
       return;
@@ -62,7 +70,7 @@ function appendImages(images) {
   const fragment = document.createDocumentFragment();
 
   images.forEach(image => {
-    const { webformatURL, largeImageURL, tags, likes, views, comments, downloads } = image;
+    const { webformatURL, tags, likes, views, comments, downloads } = image;
 
     const card = document.createElement('div');
     card.classList.add('photo-card');
@@ -101,12 +109,20 @@ function clearGallery() {
 
 function checkLoadMoreButton() {
   if (page * ITEMS_PER_PAGE < totalHits) {
-    loadMoreBtn.classList.remove('hide');
+    showLoadMoreButton();
   } else {
-    loadMoreBtn.classList.add('hide');
+    hideLoadMoreButton();
     showError("We're sorry, but you've reached the end of search results.");
-    notiflix.Notify.failure("We're sorry, but you've reached the end of search results.");
+    Notiflix.Notify.failure("We're sorry, but you've reached the end of search results.");
   }
+}
+
+function showLoadMoreButton() {
+  loadMoreBtn.classList.remove('hide');
+}
+
+function hideLoadMoreButton() {
+  loadMoreBtn.classList.add('hide');
 }
 
 async function loadMoreImages() {
@@ -115,10 +131,13 @@ async function loadMoreImages() {
 }
 
 function showError(message) {
-  const errorElement = document.querySelector('.error');
   errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  notiflix.Notify.failure(message);
+  errorElement.style.display = 'none';
+  Notiflix.Notify.failure(message);
 }
 
-// notiflix.Notify.init({ position: 'center-bottom', distance: '15px', timeout: 3000 });
+function showSuccessMessage(message) {
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  Notiflix.Notify.success(message);
+}
