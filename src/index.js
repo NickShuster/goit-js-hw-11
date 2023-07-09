@@ -1,139 +1,124 @@
-import axios from 'axios';
-import Notiflix from 'notiflix';
+const API_KEY = '38138051-81d00d61410ef793a2f891f68';
 const BASE_URL = 'https://pixabay.com/api/';
-
-axios.defaults.headers.common["x-api-key"] = "live_8MwsOkn3MOo7VnSQaDExTxH256t08mMl4kkvSIwqATPKQ0kfM7FPETs3DhtDNjVJ";
+const ITEMS_PER_PAGE = 20;
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
 
+let searchQuery = '';
 let page = 1;
-let currentQuery = '';
+let totalHits = 0;
 
-searchForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+loadMoreBtn.classList.add('hide');
 
-  const formData = new FormData(e.target);
-  const query = formData.get('searchQuery');
+searchForm.addEventListener('submit', handleSubmit);
+loadMoreBtn.addEventListener('click', loadMoreImages);
 
-  if (query.trim() === '') {
-    return;
-  }
+async function handleSubmit(event) {
+  event.preventDefault();
+  searchQuery = event.target.elements.searchQuery.value.trim();
+  if (searchQuery === '') return;
 
-  if (query !== currentQuery) {
-    clearGallery();
-    page = 1;
-  }
+  page = 1;
+  totalHits = 0;
+  clearGallery();
+  await fetchImages();
+}
 
-  currentQuery = query;
-
+async function fetchImages() {
   try {
     const response = await axios.get(BASE_URL, {
       params: {
-        q: query,
+        key: API_KEY,
+        q: searchQuery,
         image_type: 'photo',
         orientation: 'horizontal',
         safesearch: true,
-        page: page,
-        per_page: 40,
-      },
+        page,
+        per_page: ITEMS_PER_PAGE
+      }
     });
 
-    const { data } = response;
-    const { hits, totalHits } = data;
+    const { hits, totalHits: newTotalHits } = response.data;
+    totalHits = newTotalHits;
 
     if (hits.length === 0) {
-      showNoImagesMessage();
+      showError('Sorry, there are no images matching your search query. Please try again.');
+      clearGallery();
       return;
     }
 
-    renderImages(hits);
-
-    if (hits.length < totalHits) {
-      showLoadMoreButton();
-    } else {
-      hideLoadMoreButton();
-    }
+    appendImages(hits);
+    checkLoadMoreButton();
   } catch (error) {
-    console.error(error);
-    showErrorNotification();
+    console.log(error);
+    showError('Something went wrong. Please try again later.');
+    notiflix.Notify.failure('Something went wrong. Please try again later.');
   }
-});
+}
 
-loadMoreBtn.addEventListener('click', async () => {
-  loadMoreBtn.disabled = true;
-  loadMoreBtn.textContent = 'Loading...';
+function appendImages(images) {
+  const fragment = document.createDocumentFragment();
 
-  try {
-    page++;
+  images.forEach(image => {
+    const { webformatURL, largeImageURL, tags, likes, views, comments, downloads } = image;
 
-    const response = await axios.get(BASE_URL, {
-      params: {
-        q: currentQuery,
-        image_type: 'photo',
-        orientation: 'horizontal',
-        safesearch: true,
-        page: page,
-        per_page: 40,
-      },
-    });
+    const card = document.createElement('div');
+    card.classList.add('photo-card');
 
-    const { data } = response;
-    const { hits, totalHits } = data;
+    const img = document.createElement('img');
+    img.src = webformatURL;
+    img.alt = tags;
+    img.loading = 'lazy';
 
-    renderImages(hits);
+    const info = document.createElement('div');
+    info.classList.add('info');
 
-    if (hits.length >= totalHits) {
-      hideLoadMoreButton();
-    } else {
-      showLoadMoreButton();
-    }
-  } catch (error) {
-    console.error(error);
-    showErrorNotification();
-  } finally {
-    loadMoreBtn.disabled = false;
-    loadMoreBtn.textContent = 'Load more';
-  }
-});
+    const likesElem = createInfoItem('Likes', likes);
+    const viewsElem = createInfoItem('Views', views);
+    const commentsElem = createInfoItem('Comments', comments);
+    const downloadsElem = createInfoItem('Downloads', downloads);
 
-function renderImages(images) {
-  const cardsHTML = images.map((image) => {
-    const { webformatURL, likes, views, comments, downloads } = image;
-    const cardHTML = `
-      <div class="photo-card">
-        <img src="${webformatURL}" alt="" loading="lazy" />
-        <div class="info">
-          <p class="info-item"><b>Likes:</b> ${likes}</p>
-          <p class="info-item"><b>Views:</b> ${views}</p>
-          <p class="info-item"><b>Comments:</b> ${comments}</p>
-          <p class="info-item"><b>Downloads:</b> ${downloads}</p>
-        </div>
-      </div>
-    `;
-    return cardHTML;
+    info.append(likesElem, viewsElem, commentsElem, downloadsElem);
+    card.append(img, info);
+    fragment.appendChild(card);
   });
 
-  gallery.insertAdjacentHTML('beforeend', cardsHTML.join(''));
+  gallery.appendChild(fragment);
+}
+
+function createInfoItem(label, value) {
+  const p = document.createElement('p');
+  p.classList.add('info-item');
+  p.innerHTML = `<b>${label}:</b> ${value}`;
+  return p;
 }
 
 function clearGallery() {
   gallery.innerHTML = '';
 }
 
-function showLoadMoreButton() {
-  loadMoreBtn.style.display = 'block';
+function checkLoadMoreButton() {
+  if (page * ITEMS_PER_PAGE < totalHits) {
+    loadMoreBtn.classList.remove('hide');
+  } else {
+    loadMoreBtn.classList.add('hide');
+    showError("We're sorry, but you've reached the end of search results.");
+    notiflix.Notify.failure("We're sorry, but you've reached the end of search results.");
+  }
 }
 
-function hideLoadMoreButton() {
-  loadMoreBtn.style.display = 'none';
+async function loadMoreImages() {
+  page++;
+  await fetchImages();
 }
 
-function showNoImagesMessage() {
-  Notiflix.Notify.warning("Sorry, there are no images matching your search query. Please try again.");
+function showError(message) {
+  const errorElement = document.querySelector('.error');
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  notiflix.Notify.failure(message);
 }
 
-function showErrorNotification() {
-  Notiflix.Notify.failure('Something went wrong. Please try again later.');
-}
+notiflix.Notify.init({ position: 'center-bottom', distance: '15px', timeout: 3000 });
