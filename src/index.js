@@ -1,6 +1,6 @@
 const API_KEY = '38138051-81d00d61410ef793a2f891f68';
 const BASE_URL = 'https://pixabay.com/api/';
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 40;
 
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
@@ -20,7 +20,10 @@ loadMoreBtn.addEventListener('click', loadMoreImages);
 async function handleSubmit(event) {
   event.preventDefault();
   searchQuery = event.target.elements.searchQuery.value.trim();
-  if (searchQuery === '') return;
+  if (searchQuery === '') {
+    showError('Please enter a search query.');
+    return;
+  }
 
   page = 1;
   totalHits = 0;
@@ -62,7 +65,7 @@ async function fetchImages() {
   } catch (error) {
     console.log(error);
     showError('Something went wrong. Please try again later.');
-    notiflix.Notify.failure('Something went wrong. Please try again later.');
+    Notiflix.Notify.failure('Something went wrong. Please try again later.');
   }
 }
 
@@ -132,7 +135,7 @@ async function loadMoreImages() {
 
 function showError(message) {
   errorElement.textContent = message;
-  errorElement.style.display = 'none';
+  errorElement.style.display = 'block';
   Notiflix.Notify.failure(message);
 }
 
